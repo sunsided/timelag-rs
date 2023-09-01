@@ -11,6 +11,8 @@
 //! let lag = f64::INFINITY;
 //! let padding = f64::INFINITY;
 //!
+//! // Create three lagged versions.
+//! // Use a stride of 5 for the rows, i.e. pad with one extra entry.
 //! let direct = lag_matrix(&data, 3, lag, 5).unwrap();
 //!
 //! assert_eq!(
@@ -71,6 +73,8 @@ pub trait CreateLagMatrix<T> {
     /// let lag = f64::INFINITY;
     /// let padding = f64::INFINITY;
     ///
+    /// // Create three lagged versions.
+    /// // Use a stride of 5 for the rows, i.e. pad with one extra entry.
     /// let direct = data.lag_matrix(3, lag, 5).unwrap();
     ///
     /// assert_eq!(
@@ -127,6 +131,8 @@ where
 /// let lag = f64::INFINITY;
 /// let padding = f64::INFINITY;
 ///
+/// // Create three lagged versions.
+/// // Use a stride of 5 for the rows, i.e. pad with one extra entry.
 /// let direct = lag_matrix(&data, 3, lag, 5).unwrap();
 ///
 /// assert_eq!(
