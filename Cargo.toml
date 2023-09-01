@@ -1,0 +1,17 @@
+[package]
+name = "timelag"
+version = "0.1.0"
+description = "Creating time lagged time series data"
+authors = ["Markus Mayer"]
+repository = "https://github.com/sunsided/timelag-rs"
+keywords = ["time-series", "analysis", "forecasting", "control"]
+categories = ["algorithms"]
+license = "EUPL-1.2"
+readme = "README.md"
+edition = "2021"
+
+[features]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
