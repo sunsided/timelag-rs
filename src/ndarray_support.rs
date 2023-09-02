@@ -64,7 +64,9 @@ where
             let lagged = lag_matrix(slice, lags, fill, stride)?;
             let series_len = slice.len();
             let actual_stride = lagged.len() / series_len;
-            Ok(make_array(lags, lagged, series_len, actual_stride))
+
+            // TODO: Refactor to use &LagMatrix<A> directly
+            Ok(make_array(lags, lagged.data, series_len, actual_stride))
         } else {
             Err(LagError::InvalidMemoryLayout)
         }
@@ -88,10 +90,11 @@ where
                     stride,
                 )?;
 
+                // TODO: Refactor to use &LagMatrix<A> directly
                 let actual_stride = stride.max(series_len);
                 Ok(make_array_2d_row_major(
                     lags,
-                    lagged,
+                    lagged.data,
                     series_len,
                     num_series,
                     actual_stride,
@@ -107,10 +110,11 @@ where
                     stride,
                 )?;
 
+                // TODO: Refactor to use &LagMatrix<A> directly
                 let actual_stride = stride.max(series_len);
                 Ok(make_array_2d_column_major(
                     lags,
-                    lagged,
+                    lagged.data,
                     series_len,
                     num_series,
                     actual_stride,
