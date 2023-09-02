@@ -1,4 +1,4 @@
-use crate::{lag_matrix, lag_matrix_2d, LagError, MatrixLayout};
+use crate::{lag_matrix, lag_matrix_2d, LagError, LagMatrix, MatrixLayout};
 use ndarray::prelude::*;
 use ndarray::{Array1, OwnedRepr};
 
@@ -62,9 +62,7 @@ where
     fn lag_matrix(&self, lags: usize, fill: A, stride: usize) -> Result<Array2<A>, LagError> {
         if let Some(slice) = self.as_slice() {
             let lagged = lag_matrix(slice, lags, fill, stride)?;
-            let series_len = slice.len();
-            let actual_stride = lagged.len() / series_len;
-            Ok(make_array(lags, lagged, series_len, actual_stride))
+            Ok(make_array(lagged))
         } else {
             Err(LagError::InvalidMemoryLayout)
         }
@@ -79,7 +77,6 @@ where
         if let Some(slice) = self.as_slice_memory_order() {
             if self.is_standard_layout() {
                 let series_len = self.ncols();
-                let num_series = self.nrows();
                 let lagged = lag_matrix_2d(
                     slice,
                     MatrixLayout::RowMajor(series_len),
@@ -88,17 +85,9 @@ where
                     stride,
                 )?;
 
-                let actual_stride = stride.max(series_len);
-                Ok(make_array_2d_row_major(
-                    lags,
-                    lagged,
-                    series_len,
-                    num_series,
-                    actual_stride,
-                ))
+                Ok(make_array_2d_row_major(lagged))
             } else {
                 let series_len = self.nrows();
-                let num_series = self.ncols();
                 let lagged = lag_matrix_2d(
                     slice,
                     MatrixLayout::ColumnMajor(series_len),
@@ -107,14 +96,7 @@ where
                     stride,
                 )?;
 
-                let actual_stride = stride.max(series_len);
-                Ok(make_array_2d_column_major(
-                    lags,
-                    lagged,
-                    series_len,
-                    num_series,
-                    actual_stride,
-                ))
+                Ok(make_array_2d_column_major(lagged))
             }
         } else {
             Err(LagError::InvalidMemoryLayout)
@@ -122,56 +104,51 @@ where
     }
 }
 
-fn make_array<A>(
-    lags: usize,
-    lagged: Vec<A>,
-    series_len: usize,
-    actual_stride: usize,
-) -> ArrayBase<OwnedRepr<A>, Ix2> {
-    let array = if actual_stride == series_len {
-        Array2::<A>::from_shape_vec((series_len, lags + 1), lagged).expect("the shape is valid")
-    } else {
-        Array2::<A>::from_shape_vec((series_len, lags + 1).strides((actual_stride, 1)), lagged)
-            .expect("the shape is valid")
-    };
-    array
-}
-
-fn make_array_2d_row_major<A>(
-    lags: usize,
-    lagged: Vec<A>,
-    series_len: usize,
-    series_count: usize,
-    actual_stride: usize,
-) -> ArrayBase<OwnedRepr<A>, Ix2> {
-    let array = if actual_stride == series_len {
-        Array2::<A>::from_shape_vec((series_len, series_count * (lags + 1)), lagged)
+fn make_array<A>(matrix: LagMatrix<A>) -> ArrayBase<OwnedRepr<A>, Ix2> {
+    let array = if matrix.row_stride == matrix.series_length {
+        Array2::<A>::from_shape_vec((matrix.series_length, matrix.num_lags), matrix.data)
             .expect("the shape is valid")
     } else {
         Array2::<A>::from_shape_vec(
-            (series_count * (lags + 1), series_len).strides((actual_stride, 1)),
-            lagged,
+            (matrix.series_length, matrix.num_lags).strides((matrix.row_stride, 1)),
+            matrix.data,
         )
         .expect("the shape is valid")
     };
     array
 }
 
-fn make_array_2d_column_major<A>(
-    lags: usize,
-    lagged: Vec<A>,
-    series_len: usize,
-    series_count: usize,
-    actual_stride: usize,
-) -> ArrayBase<OwnedRepr<A>, Ix2> {
-    let array = if actual_stride == series_len {
-        Array2::<A>::from_shape_vec((series_count * (lags + 1), series_len), lagged)
-            .expect("the shape is valid")
-            .reversed_axes()
+fn make_array_2d_row_major<A>(matrix: LagMatrix<A>) -> ArrayBase<OwnedRepr<A>, Ix2> {
+    let array = if matrix.row_stride == matrix.series_length {
+        Array2::<A>::from_shape_vec(
+            (matrix.series_length, matrix.series_count * matrix.num_lags),
+            matrix.into_vec(),
+        )
+        .expect("the shape is valid")
     } else {
         Array2::<A>::from_shape_vec(
-            (series_count * (lags + 1), series_len).strides((1, actual_stride)),
-            lagged,
+            (matrix.series_count * matrix.num_lags, matrix.series_length)
+                .strides((matrix.row_stride, 1)),
+            matrix.into_vec(),
+        )
+        .expect("the shape is valid")
+    };
+    array
+}
+
+fn make_array_2d_column_major<A>(matrix: LagMatrix<A>) -> ArrayBase<OwnedRepr<A>, Ix2> {
+    let array = if matrix.row_stride == matrix.series_length {
+        Array2::<A>::from_shape_vec(
+            (matrix.series_count * matrix.num_lags, matrix.series_length),
+            matrix.into_vec(),
+        )
+        .expect("the shape is valid")
+        .reversed_axes()
+    } else {
+        Array2::<A>::from_shape_vec(
+            (matrix.series_count * matrix.num_lags, matrix.series_length)
+                .strides((1, matrix.row_stride)),
+            matrix.into_vec(),
         )
         .expect("the shape is valid")
         .reversed_axes()
