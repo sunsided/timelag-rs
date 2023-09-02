@@ -2,6 +2,10 @@
 //!
 //! Functions for creating time-lagged versions of time series data.
 //!
+//! ## Crate Features
+//!
+//! * `ndarray` - Enables support for [ndarray](https://crates.io/crates/ndarray)'s `Array1` and `Array2` traits.
+//!
 //! ## Example
 //!
 //! For singular time series:
