@@ -196,6 +196,17 @@ impl<T> LagMatrix<T> {
             MatrixLayout::ColumnMajor(self.series_length)
         }
     }
+
+    /// Converts this [`LagMatrix`] into a vector.
+    pub fn into_vec(self) -> Vec<T> {
+        self.data
+    }
+}
+
+impl<T> Into<Vec<T>> for LagMatrix<T> {
+    fn into(self) -> Vec<T> {
+        self.data
+    }
 }
 
 impl<T> Deref for LagMatrix<T> {
