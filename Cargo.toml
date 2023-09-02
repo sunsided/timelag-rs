@@ -13,3 +13,10 @@ edition = "2021"
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = []
+ndarray = ["dep:ndarray"]
+
+[dependencies]
+ndarray = { version = "0.15.6", optional = true }
