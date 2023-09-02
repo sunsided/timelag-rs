@@ -42,7 +42,7 @@
 //! let lag = f64::INFINITY;
 //! let padding = f64::INFINITY;
 //!
-//! let lagged = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 3, lag, 5).unwrap();
+//! let lagged = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 3, lag, 5).unwrap();
 //!
 //! assert_eq!(
 //!     lagged,
@@ -75,7 +75,7 @@
 //! let padding = f64::INFINITY;
 //!
 //! // Example row stride of nine: 2 time series × (1 original + 3 lags) + 1 extra padding.
-//! let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 3, lag, 9).unwrap();
+//! let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 3, lag, 9).unwrap();
 //!
 //! assert_eq!(
 //!     lagged,
@@ -108,15 +108,21 @@ mod ndarray;
 use std::borrow::Borrow;
 use std::fmt::{Display, Formatter};
 
+#[cfg(feature = "ndarray")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
+pub use ndarray::LagMatrixFromArray;
+
 /// The prelude.
 pub mod prelude {
     pub use crate::CreateLagMatrix;
 
     #[cfg(feature = "ndarray")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
-    pub use crate::ndarray::LagMatrixFromArray1;
+    pub use crate::ndarray::LagMatrixFromArray;
 }
 
+/// Provides the [`lag_matrix`](CreateLagMatrix::lag_matrix) and [`lag_matrix_2d`](CreateLagMatrix::lag_matrix_2d)
+/// functions for slice-able copy-able types.
 pub trait CreateLagMatrix<T> {
     /// Create a time-lagged matrix of time series values.
     ///
@@ -209,7 +215,7 @@ pub trait CreateLagMatrix<T> {
     /// let lag = f64::INFINITY;
     /// let padding = f64::INFINITY;
     ///
-    /// let lagged = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 3, lag, 5).unwrap();
+    /// let lagged = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 3, lag, 5).unwrap();
     ///
     /// assert_eq!(
     ///     lagged,
@@ -242,7 +248,7 @@ pub trait CreateLagMatrix<T> {
     /// let padding = f64::INFINITY;
     ///
     /// // Example row stride of nine: 2 time series × (1 original + 3 lags) + 1 extra padding.
-    /// let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 3, lag, 9).unwrap();
+    /// let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 3, lag, 9).unwrap();
     ///
     /// assert_eq!(
     ///     lagged,
@@ -378,19 +384,19 @@ pub enum MatrixLayout {
     /// and the columns represent points in time.
     ///
     /// The values represents the number of elements per row, i.e. the length of each time series.
-    RowWise(usize),
+    RowMajor(usize),
     /// Data is laid out column-wise, i.e. reach column of the matrix contains a time series
     /// and the rows represent points in time.
     ///
     /// The values represents the number of elements per column, i.e. the length of each time series.
-    ColumnWise(usize),
+    ColumnMajor(usize),
 }
 
 impl MatrixLayout {
     pub fn len(&self) -> usize {
         match self {
-            MatrixLayout::RowWise(len) => *len,
-            MatrixLayout::ColumnWise(len) => *len,
+            MatrixLayout::RowMajor(len) => *len,
+            MatrixLayout::ColumnMajor(len) => *len,
         }
     }
 }
@@ -440,7 +446,7 @@ impl MatrixLayout {
 /// let lag = f64::INFINITY;
 /// let padding = f64::INFINITY;
 ///
-/// let lagged = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 3, lag, 5).unwrap();
+/// let lagged = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 3, lag, 5).unwrap();
 ///
 /// assert_eq!(
 ///     lagged,
@@ -473,7 +479,7 @@ impl MatrixLayout {
 /// let padding = f64::INFINITY;
 ///
 /// // Example row stride of nine: 2 time series × (1 original + 3 lags) + 1 extra padding.
-/// let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 3, lag, 9).unwrap();
+/// let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 3, lag, 9).unwrap();
 ///
 /// assert_eq!(
 ///     lagged,
@@ -517,7 +523,7 @@ pub fn lag_matrix_2d<T: Copy>(
     }
 
     Ok(match layout {
-        MatrixLayout::RowWise(_) => {
+        MatrixLayout::RowMajor(_) => {
             if row_stride < series_length {
                 return Err(LagError::InvalidStride);
             }
@@ -538,7 +544,7 @@ pub fn lag_matrix_2d<T: Copy>(
             }
             lagged
         }
-        MatrixLayout::ColumnWise(_) => {
+        MatrixLayout::ColumnMajor(_) => {
             if row_stride < num_series * lags {
                 return Err(LagError::InvalidStride);
             }
@@ -575,6 +581,7 @@ pub fn lag_matrix_2d<T: Copy>(
     })
 }
 
+/// An error during creation of a lagged data matrix.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum LagError {
     /// The number of lags is greater than the number of data points.
@@ -693,7 +700,7 @@ mod tests {
         let lag = f64::INFINITY;
         let padding = f64::INFINITY;
 
-        let direct = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 3, lag, 5).unwrap();
+        let direct = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 3, lag, 5).unwrap();
 
         assert_eq!(
             direct,
@@ -724,7 +731,7 @@ mod tests {
         let lag = f64::INFINITY;
         let padding = f64::INFINITY;
 
-        let direct = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 3, lag, 9).unwrap();
+        let direct = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 3, lag, 9).unwrap();
 
         assert_eq!(
             direct,

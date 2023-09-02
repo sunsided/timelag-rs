@@ -8,6 +8,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Added support for `ndarray::Array1` inputs.
+- Added support for `ndarray::Array2` inputs.
 
 ## [0.2.0] - 2023-09-02
 
