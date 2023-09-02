@@ -1,4 +1,4 @@
-//! timelag — creating time-lagged time series data
+//! # timelag — creating time-lagged time series data
 //!
 //! This crate provides the `lag_matrix` and related functions to create time-lagged versions of time series similar
 //! to MATLAB's [`lagmatrix`](https://mathworks.com/help/econ/lagmatrix.html) for time series analysis.
