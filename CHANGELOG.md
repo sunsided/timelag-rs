@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Added support for `ndarray::Array1` inputs.
+
 ## [0.2.0] - 2023-09-02
 
 ### Added

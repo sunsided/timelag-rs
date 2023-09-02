@@ -101,12 +101,20 @@
 // the `docsrs` configuration attribute is defined
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+#[cfg(feature = "ndarray")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
+mod ndarray;
+
 use std::borrow::Borrow;
 use std::fmt::{Display, Formatter};
 
 /// The prelude.
 pub mod prelude {
     pub use crate::CreateLagMatrix;
+
+    #[cfg(feature = "ndarray")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
+    pub use crate::ndarray::LagMatrixFromArray1;
 }
 
 pub trait CreateLagMatrix<T> {
@@ -575,6 +583,8 @@ pub enum LagError {
     InvalidStride,
     /// The number of data points does not match the row/column length specified.
     InvalidLength,
+    /// The data is in an invalid (e.g. non-contiguous) memory layout.
+    InvalidMemoryLayout,
 }
 
 impl std::error::Error for LagError {}
@@ -597,6 +607,10 @@ impl Display for LagError {
             LagError::InvalidLength => write!(
                 f,
                 "The number of data points does not match the row/column length specified"
+            ),
+            LagError::InvalidMemoryLayout => write!(
+                f,
+                "The data is in an invalid (e.g. non-contiguous) memory layout"
             ),
         }
     }
