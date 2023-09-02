@@ -67,7 +67,7 @@ fn matrix_rows() {
     let lag = f64::INFINITY;
     let padding = f64::INFINITY;
 
-    let lagged = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 3, lag, 5).unwrap();
+    let lagged = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 0..=3, lag, 5).unwrap();
 
     assert_eq!(
         lagged,
@@ -103,7 +103,7 @@ fn matrix_columns() {
     let padding = f64::INFINITY;
 
     // Example row stride of nine: 2 time series × (1 original + 3 lags) + 1 extra padding.
-    let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 3, lag, 9).unwrap();
+    let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 0..=3, lag, 9).unwrap();
 
     assert_eq!(
         lagged,
