@@ -24,7 +24,7 @@ fn singular_series() {
     // Use a stride of 5 for the rows, i.e. pad with one extra entry.
     let lagged = lag_matrix(&data, 0..=3, lag, 5).unwrap();
 
-    // The function is also available via the CreateLagMatrix.
+    // The function is also available via the CreateLagMatrix trait.
     // All methods take an IntoIterator<Item = usize> for the lags.
     let other = data.lag_matrix([0, 1, 2, 3], lag, 5).unwrap();
     
