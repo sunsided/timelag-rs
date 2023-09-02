@@ -3,6 +3,9 @@
 //! Functions for creating time-lagged versions of time series data.
 //!
 //! ## Example
+//!
+//! For singular time series:
+//!
 //! ```
 //! # use timelag::lag_matrix;
 //! let data = [1.0, 2.0, 3.0, 4.0];
@@ -13,15 +16,80 @@
 //!
 //! // Create three lagged versions.
 //! // Use a stride of 5 for the rows, i.e. pad with one extra entry.
-//! let direct = lag_matrix(&data, 3, lag, 5).unwrap();
+//! let lagged = lag_matrix(&data, 3, lag, 5).unwrap();
 //!
 //! assert_eq!(
-//!     direct,
+//!     lagged,
 //!     &[
 //!         1.0, 2.0, 3.0, 4.0, padding, // original data
 //!         lag, 1.0, 2.0, 3.0, padding, // first lag
 //!         lag, lag, 1.0, 2.0, padding, // second lag
 //!         lag, lag, lag, 1.0, padding, // third lag
+//!     ]
+//! );
+//! ```
+//!
+//! For matrices with time series along their rows:
+//!
+//! ```
+//! # use timelag::{lag_matrix_2d, MatrixLayout};
+//! let data = [
+//!      1.0,  2.0,  3.0,  4.0,
+//!     -1.0, -2.0, -3.0, -4.0
+//! ];
+//!
+//! // Using infinity for padding because NaN doesn't equal itself.
+//! let lag = f64::INFINITY;
+//! let padding = f64::INFINITY;
+//!
+//! let lagged = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 3, lag, 5).unwrap();
+//!
+//! assert_eq!(
+//!     lagged,
+//!     &[
+//!          1.0,  2.0,  3.0,  4.0, padding, // original data
+//!         -1.0, -2.0, -3.0, -4.0, padding,
+//!          lag,  1.0,  2.0,  3.0, padding, // first lag
+//!          lag, -1.0, -2.0, -3.0, padding,
+//!          lag,  lag,  1.0,  2.0, padding, // second lag
+//!          lag,  lag, -1.0, -2.0, padding,
+//!          lag,  lag,  lag,  1.0, padding, // third lag
+//!          lag,  lag,  lag, -1.0, padding,
+//!     ]
+//! );
+//! ```
+//!
+//! For matrices with time series along their columns:
+//!
+//! ```
+//! # use timelag::{lag_matrix_2d, MatrixLayout};
+//! let data = [
+//!     1.0, -1.0,
+//!     2.0, -2.0,
+//!     3.0, -3.0,
+//!     4.0, -4.0
+//! ];
+//!
+//! // Using infinity for padding because NaN doesn't equal itself.
+//! let lag = f64::INFINITY;
+//! let padding = f64::INFINITY;
+//!
+//! // Example row stride of nine: 2 time series × (1 original + 3 lags) + 1 extra padding.
+//! let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 3, lag, 9).unwrap();
+//!
+//! assert_eq!(
+//!     lagged,
+//!     &[
+//!     //   original
+//!     //   |-----|    first lag
+//!     //   |     |     |-----|    second lag
+//!     //   |     |     |     |     |-----|    third lag
+//!     //   |     |     |     |     |     |     |-----|
+//!     //   ↓     ↓     ↓     ↓     ↓     ↓     ↓     ↓
+//!         1.0, -1.0,  lag,  lag,  lag,  lag,  lag,  lag, padding,
+//!         2.0, -2.0,  1.0, -1.0,  lag,  lag,  lag,  lag, padding,
+//!         3.0, -3.0,  2.0, -2.0,  1.0, -1.0,  lag,  lag, padding,
+//!         4.0, -4.0,  3.0, -3.0,  2.0, -2.0,  1.0, -1.0, padding
 //!     ]
 //! );
 //! ```
@@ -75,10 +143,10 @@ pub trait CreateLagMatrix<T> {
     ///
     /// // Create three lagged versions.
     /// // Use a stride of 5 for the rows, i.e. pad with one extra entry.
-    /// let direct = data.lag_matrix(3, lag, 5).unwrap();
+    /// let lagged = data.lag_matrix(3, lag, 5).unwrap();
     ///
     /// assert_eq!(
-    ///     direct,
+    ///     lagged,
     ///     &[
     ///         1.0, 2.0, 3.0, 4.0, padding, // original data
     ///         lag, 1.0, 2.0, 3.0, padding, // first lag
@@ -133,10 +201,10 @@ pub trait CreateLagMatrix<T> {
     /// let lag = f64::INFINITY;
     /// let padding = f64::INFINITY;
     ///
-    /// let direct = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 3, lag, 5).unwrap();
+    /// let lagged = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 3, lag, 5).unwrap();
     ///
     /// assert_eq!(
-    ///     direct,
+    ///     lagged,
     ///     &[
     ///          1.0,  2.0,  3.0,  4.0, padding, // original data
     ///         -1.0, -2.0, -3.0, -4.0, padding,
@@ -166,10 +234,10 @@ pub trait CreateLagMatrix<T> {
     /// let padding = f64::INFINITY;
     ///
     /// // Example row stride of nine: 2 time series × (1 original + 3 lags) + 1 extra padding.
-    /// let direct = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 3, lag, 9).unwrap();
+    /// let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 3, lag, 9).unwrap();
     ///
     /// assert_eq!(
-    ///     direct,
+    ///     lagged,
     ///     &[
     ///     //   original
     ///     //   |-----|    first lag
@@ -248,10 +316,10 @@ where
 ///
 /// // Create three lagged versions.
 /// // Use a stride of 5 for the rows, i.e. pad with one extra entry.
-/// let direct = lag_matrix(&data, 3, lag, 5).unwrap();
+/// let lagged = lag_matrix(&data, 3, lag, 5).unwrap();
 ///
 /// assert_eq!(
-///     direct,
+///     lagged,
 ///     &[
 ///         1.0, 2.0, 3.0, 4.0, padding, // original data
 ///         lag, 1.0, 2.0, 3.0, padding, // first lag
@@ -364,10 +432,10 @@ impl MatrixLayout {
 /// let lag = f64::INFINITY;
 /// let padding = f64::INFINITY;
 ///
-/// let direct = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 3, lag, 5).unwrap();
+/// let lagged = lag_matrix_2d(&data, MatrixLayout::RowWise(4), 3, lag, 5).unwrap();
 ///
 /// assert_eq!(
-///     direct,
+///     lagged,
 ///     &[
 ///          1.0,  2.0,  3.0,  4.0, padding, // original data
 ///         -1.0, -2.0, -3.0, -4.0, padding,
@@ -397,10 +465,10 @@ impl MatrixLayout {
 /// let padding = f64::INFINITY;
 ///
 /// // Example row stride of nine: 2 time series × (1 original + 3 lags) + 1 extra padding.
-/// let direct = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 3, lag, 9).unwrap();
+/// let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnWise(4), 3, lag, 9).unwrap();
 ///
 /// assert_eq!(
-///     direct,
+///     lagged,
 ///     &[
 ///     //   original
 ///     //   |-----|    first lag
