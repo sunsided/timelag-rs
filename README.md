@@ -22,7 +22,11 @@ fn singular_series() {
     
     // Create three lagged versions.
     // Use a stride of 5 for the rows, i.e. pad with one extra entry.
-    let lagged = lag_matrix(&data, 3, lag, 5).unwrap();
+    let lagged = lag_matrix(&data, 0..=3, lag, 5).unwrap();
+
+    // The function is also available via the CreateLagMatrix.
+    // All methods take an IntoIterator<Item = usize> for the lags.
+    let other = data.lag_matrix([0, 1, 2, 3], lag, 5).unwrap();
     
     assert_eq!(
         lagged,
@@ -33,6 +37,7 @@ fn singular_series() {
             lag, lag, lag, 1.0, padding, // third lag
         ]
     );
+    assert_eq!(lagged, other);
 }
 ```
 

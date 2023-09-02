@@ -9,6 +9,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Changed functions operating on slices to return a `LagMatrix` struct
   providing meta information about the generated matrix.
+- Lag indices can now be specified as any `IntoIterator<Item = usize>`, e.g. range, array or slice.
 
 ## [0.3.0] - 2023-09-02
 
