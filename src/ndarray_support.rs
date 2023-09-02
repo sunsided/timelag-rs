@@ -40,7 +40,7 @@ where
     ///
     /// // Create three lagged versions.
     /// // Use a stride of 5 for the rows, i.e. pad with one extra entry.
-    /// let lagged = data.lag_matrix(3, lag, 5).unwrap();
+    /// let lagged = data.lag_matrix(0..=3, lag, 5).unwrap();
     ///
     /// assert_eq!(
     ///     lagged,
@@ -52,14 +52,43 @@ where
     ///     ]
     /// );
     /// ```
-    fn lag_matrix(&self, lags: usize, fill: A, stride: usize) -> Result<Array2<A>, LagError>;
+    ///
+    /// Lags can be provided in arbitrary order:
+    ///
+    /// ```
+    /// # use timelag::prelude::*;
+    /// # let data = [1.0, 2.0, 3.0, 4.0];
+    /// # let lag = f64::INFINITY;
+    /// # let padding = f64::INFINITY;
+    /// let lagged = data.lag_matrix([3, 1, 2], lag, 5).unwrap();
+    ///
+    /// assert_eq!(
+    ///     lagged,
+    ///     &[
+    ///         lag, lag, lag, 1.0, padding,
+    ///         lag, 1.0, 2.0, 3.0, padding,
+    ///         lag, lag, 1.0, 2.0, padding,
+    ///     ]
+    /// );
+    /// ```
+    fn lag_matrix<R: IntoIterator<Item = usize>>(
+        &self,
+        lags: R,
+        fill: A,
+        stride: usize,
+    ) -> Result<Array2<A>, LagError>;
 }
 
 impl<A> LagMatrixFromArray<A> for Array1<A>
 where
     A: Copy,
 {
-    fn lag_matrix(&self, lags: usize, fill: A, stride: usize) -> Result<Array2<A>, LagError> {
+    fn lag_matrix<R: IntoIterator<Item = usize>>(
+        &self,
+        lags: R,
+        fill: A,
+        stride: usize,
+    ) -> Result<Array2<A>, LagError> {
         if let Some(slice) = self.as_slice() {
             let lagged = lag_matrix(slice, lags, fill, stride)?;
             Ok(make_array(lagged))
@@ -73,7 +102,12 @@ impl<A> LagMatrixFromArray<A> for Array2<A>
 where
     A: Copy,
 {
-    fn lag_matrix(&self, lags: usize, fill: A, stride: usize) -> Result<Array2<A>, LagError> {
+    fn lag_matrix<R: IntoIterator<Item = usize>>(
+        &self,
+        lags: R,
+        fill: A,
+        stride: usize,
+    ) -> Result<Array2<A>, LagError> {
         if let Some(slice) = self.as_slice_memory_order() {
             if self.is_standard_layout() {
                 let series_len = self.ncols();
@@ -166,7 +200,7 @@ mod tests {
         let data = Array1::from_iter([42.0, 40.0, 38.0, 36.0]);
         let lag = f64::INFINITY;
 
-        let array = data.lag_matrix(3, lag, 0).unwrap();
+        let array = data.lag_matrix(0..=3, lag, 0).unwrap();
 
         assert_eq!(array.ncols(), 4);
         assert_eq!(array.nrows(), 4);
@@ -187,7 +221,7 @@ mod tests {
         let data = Array1::from_iter([42.0, 40.0, 38.0, 36.0]);
         let lag = f64::INFINITY;
 
-        let array = data.lag_matrix(3, lag, 8).unwrap();
+        let array = data.lag_matrix(0..=3, lag, 8).unwrap();
 
         assert_eq!(array.ncols(), 4);
         assert_eq!(array.nrows(), 4);
@@ -215,7 +249,7 @@ mod tests {
         // Using infinity for padding because NaN doesn't equal itself.
         let lag = f64::INFINITY;
 
-        let array = data.lag_matrix(3, lag, 5).unwrap();
+        let array = data.lag_matrix(0..=3, lag, 5).unwrap();
 
         assert_eq!(array.ncols(), 4);
         assert_eq!(array.nrows(), 8);
@@ -251,7 +285,7 @@ mod tests {
         // Using infinity for padding because NaN doesn't equal itself.
         let lag = f64::INFINITY;
 
-        let array = data.lag_matrix(3, lag, 9).unwrap();
+        let array = data.lag_matrix(0..=3, lag, 9).unwrap();
 
         assert_eq!(array.ncols(), 8);
         assert_eq!(array.nrows(), 4);

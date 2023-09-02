@@ -12,7 +12,8 @@
 //! For singular time series:
 //!
 //! ```
-//! # use timelag::lag_matrix;
+//! use timelag::{CreateLagMatrix, lag_matrix};
+//!
 //! let data = [1.0, 2.0, 3.0, 4.0];
 //!
 //! // Using infinity for padding because NaN doesn't equal itself.
@@ -21,7 +22,11 @@
 //!
 //! // Create three lagged versions.
 //! // Use a stride of 5 for the rows, i.e. pad with one extra entry.
-//! let lagged = lag_matrix(&data, 3, lag, 5).unwrap();
+//! let lagged = lag_matrix(&data, 0..=3, lag, 5).unwrap();
+//!
+//! // The function is also available via the CreateLagMatrix.
+//! // All methods take an IntoIterator<Item = usize> for the lags.
+//! let other = data.lag_matrix([0, 1, 2, 3], lag, 5).unwrap();
 //!
 //! assert_eq!(
 //!     lagged,
@@ -32,6 +37,7 @@
 //!         lag, lag, lag, 1.0, padding, // third lag
 //!     ]
 //! );
+//! assert_eq!(lagged, other);
 //! ```
 //!
 //! For matrices with time series along their rows:
@@ -47,7 +53,7 @@
 //! let lag = f64::INFINITY;
 //! let padding = f64::INFINITY;
 //!
-//! let lagged = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 3, lag, 5).unwrap();
+//! let lagged = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 0..=3, lag, 5).unwrap();
 //!
 //! assert_eq!(
 //!     lagged,
@@ -80,7 +86,7 @@
 //! let padding = f64::INFINITY;
 //!
 //! // Example row stride of nine: 2 time series × (1 original + 3 lags) + 1 extra padding.
-//! let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 3, lag, 9).unwrap();
+//! let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 0..=3, lag, 9).unwrap();
 //!
 //! assert_eq!(
 //!     lagged,
@@ -284,7 +290,7 @@ pub trait CreateLagMatrix<T> {
     ///
     /// // Create three lagged versions.
     /// // Use a stride of 5 for the rows, i.e. pad with one extra entry.
-    /// let lagged = data.lag_matrix(3, lag, 5).unwrap();
+    /// let lagged = data.lag_matrix(0..=3, lag, 5).unwrap();
     ///
     /// assert_eq!(
     ///     lagged,
@@ -296,7 +302,12 @@ pub trait CreateLagMatrix<T> {
     ///     ]
     /// );
     /// ```
-    fn lag_matrix(&self, lags: usize, fill: T, stride: usize) -> Result<LagMatrix<T>, LagError>;
+    fn lag_matrix<R: IntoIterator<Item = usize>>(
+        &self,
+        lags: R,
+        fill: T,
+        stride: usize,
+    ) -> Result<LagMatrix<T>, LagError>;
 
     /// Create a time-lagged matrix of multiple time series.
     ///
@@ -342,7 +353,7 @@ pub trait CreateLagMatrix<T> {
     /// let lag = f64::INFINITY;
     /// let padding = f64::INFINITY;
     ///
-    /// let lagged = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 3, lag, 5).unwrap();
+    /// let lagged = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 0..=3, lag, 5).unwrap();
     ///
     /// assert_eq!(
     ///     lagged,
@@ -375,7 +386,7 @@ pub trait CreateLagMatrix<T> {
     /// let padding = f64::INFINITY;
     ///
     /// // Example row stride of nine: 2 time series × (1 original + 3 lags) + 1 extra padding.
-    /// let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 3, lag, 9).unwrap();
+    /// let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 0..=3, lag, 9).unwrap();
     ///
     /// assert_eq!(
     ///     lagged,
@@ -393,10 +404,10 @@ pub trait CreateLagMatrix<T> {
     ///     ]
     /// );
     /// ```
-    fn lag_matrix_2d(
+    fn lag_matrix_2d<R: IntoIterator<Item = usize>>(
         &self,
         layout: MatrixLayout,
-        lags: usize,
+        lags: R,
         fill: T,
         row_stride: usize,
     ) -> Result<LagMatrix<T>, LagError>;
@@ -408,15 +419,20 @@ where
     T: Copy,
 {
     #[inline(always)]
-    fn lag_matrix(&self, lags: usize, fill: T, stride: usize) -> Result<LagMatrix<T>, LagError> {
+    fn lag_matrix<R: IntoIterator<Item = usize>>(
+        &self,
+        lags: R,
+        fill: T,
+        stride: usize,
+    ) -> Result<LagMatrix<T>, LagError> {
         lag_matrix(self.borrow(), lags, fill, stride)
     }
 
     #[inline(always)]
-    fn lag_matrix_2d(
+    fn lag_matrix_2d<R: IntoIterator<Item = usize>>(
         &self,
         layout: MatrixLayout,
-        lags: usize,
+        lags: R,
         fill: T,
         row_stride: usize,
     ) -> Result<LagMatrix<T>, LagError> {
@@ -457,7 +473,7 @@ where
 ///
 /// // Create three lagged versions.
 /// // Use a stride of 5 for the rows, i.e. pad with one extra entry.
-/// let lagged = lag_matrix(&data, 3, lag, 5).unwrap();
+/// let lagged = lag_matrix(&data, 0..=3, lag, 5).unwrap();
 ///
 /// assert_eq!(
 ///     lagged,
@@ -469,13 +485,16 @@ where
 ///     ]
 /// );
 /// ```
-pub fn lag_matrix<T: Copy>(
+pub fn lag_matrix<T: Copy, R: IntoIterator<Item = usize>>(
     data: &[T],
-    lags: usize,
+    lags: R,
     fill: T,
     mut stride: usize,
 ) -> Result<LagMatrix<T>, LagError> {
-    if lags == 0 {
+    let lags = Vec::from_iter(lags);
+    let num_lags = lags.len();
+
+    if num_lags == 0 {
         return Err(LagError::InvalidLags);
     }
 
@@ -484,7 +503,7 @@ pub fn lag_matrix<T: Copy>(
     }
 
     let data_rows = data.len();
-    if lags > data_rows {
+    if num_lags > data_rows {
         return Err(LagError::LagExceedsValueCount);
     }
 
@@ -496,26 +515,23 @@ pub fn lag_matrix<T: Copy>(
         return Err(LagError::InvalidStride);
     }
 
-    let mut lagged = vec![fill; stride * (lags + 1)];
-    lagged[..data.len()].copy_from_slice(data);
-
-    let mut num_lags = 0;
-    for lag in 1..=lags {
-        num_lags += 1;
-        let lagged_offset = lag * stride + lag;
+    let mut lagged = vec![fill; stride * num_lags];
+    for (row, lag) in lags.into_iter().enumerate() {
+        let lagged_offset = row * stride + lag;
         let lagged_rows = data_rows - lag;
         let lagged_end = lagged_offset + lagged_rows;
-        lagged[lagged_offset..lagged_end].copy_from_slice(&data[0..lagged_rows]);
+        let src = &data[0..lagged_rows];
+        lagged[lagged_offset..lagged_end].copy_from_slice(src);
     }
 
     let matrix = LagMatrix {
         data: lagged,
-        num_rows: data_rows,
-        num_cols: num_lags + 1,
+        num_rows: num_lags,
+        num_cols: data_rows,
         series_length: data_rows,
         row_stride: stride,
         series_count: 1,
-        num_lags: num_lags + 1, // including zero lag
+        num_lags,
         row_major: true,
     };
 
@@ -591,7 +607,7 @@ impl MatrixLayout {
 /// let lag = f64::INFINITY;
 /// let padding = f64::INFINITY;
 ///
-/// let lagged = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 3, lag, 5).unwrap();
+/// let lagged = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 0..=3, lag, 5).unwrap();
 ///
 /// assert_eq!(
 ///     lagged,
@@ -624,7 +640,7 @@ impl MatrixLayout {
 /// let padding = f64::INFINITY;
 ///
 /// // Example row stride of nine: 2 time series × (1 original + 3 lags) + 1 extra padding.
-/// let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 3, lag, 9).unwrap();
+/// let lagged = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 0..=3, lag, 9).unwrap();
 ///
 /// assert_eq!(
 ///     lagged,
@@ -642,14 +658,17 @@ impl MatrixLayout {
 ///     ]
 /// );
 /// ```
-pub fn lag_matrix_2d<T: Copy>(
+pub fn lag_matrix_2d<T: Copy, R: IntoIterator<Item = usize>>(
     data_matrix: &[T],
     layout: MatrixLayout,
-    lags: usize,
+    lags: R,
     fill: T,
     mut row_stride: usize,
 ) -> Result<LagMatrix<T>, LagError> {
-    if lags == 0 {
+    let lags = Vec::from_iter(lags);
+    let num_lags = lags.len();
+
+    if num_lags == 0 {
         return Err(LagError::InvalidLags);
     }
 
@@ -658,7 +677,7 @@ pub fn lag_matrix_2d<T: Copy>(
     }
 
     let series_length = layout.len();
-    if lags > series_length {
+    if num_lags > series_length {
         return Err(LagError::LagExceedsValueCount);
     }
 
@@ -668,7 +687,7 @@ pub fn lag_matrix_2d<T: Copy>(
     }
 
     if row_stride == 0 {
-        row_stride = num_series * lags;
+        row_stride = num_series * lags.len();
     }
 
     Ok(match layout {
@@ -677,71 +696,59 @@ pub fn lag_matrix_2d<T: Copy>(
                 return Err(LagError::InvalidStride);
             }
 
-            let mut lagged = vec![fill; num_series * row_stride * (lags + 1)];
-            for lag in 0..=lags {
+            let mut lagged = vec![fill; num_series * row_stride * num_lags];
+            for (set, lag) in lags.into_iter().enumerate() {
                 for s in 0..num_series {
-                    let lagged_offset = lag * num_series * row_stride + s * row_stride + lag;
+                    let data_start = s * series_length;
+                    let data_end = (s + 1) * series_length - lag;
+
+                    let lagged_offset = set * num_series * row_stride + s * row_stride + lag;
                     let lagged_rows = series_length - lag;
                     let lagged_end = lagged_offset + lagged_rows;
 
-                    let data_start = s * series_length;
-                    let data_end = data_start + lagged_rows;
-
-                    lagged[lagged_offset..lagged_end]
-                        .copy_from_slice(&data_matrix[data_start..data_end]);
+                    let src = &data_matrix[data_start..data_end];
+                    lagged[lagged_offset..lagged_end].copy_from_slice(src);
                 }
             }
 
             LagMatrix {
                 data: lagged,
-                num_rows: series_length,
-                num_cols: num_series * (lags + 1),
+                num_rows: num_series * num_lags,
+                num_cols: series_length,
                 series_length,
                 series_count: num_series,
-                num_lags: lags + 1, // including zero-lag
+                num_lags,
                 row_stride,
                 row_major: true,
             }
         }
         MatrixLayout::ColumnMajor(_) => {
-            if row_stride < num_series * lags {
+            if row_stride < num_series * num_lags {
                 return Err(LagError::InvalidStride);
             }
 
             let mut lagged = vec![fill; row_stride * series_length];
 
-            // Prepare the last valid row.
-            // This row contains the last values of the original series first,
-            // followed by the values before that (due to time-lagging), etc.
-            // If we create a complete set of lags, the row will therefore contain
-            // all original data in reverse order, followed by optional padding (due to stride).
-            for lag in 0..=lags {
-                let lagged_offset = (series_length - 1) * row_stride + lag * num_series;
-                let lagged_end = lagged_offset + num_series;
+            for (set, lag) in lags.into_iter().enumerate() {
+                for s in 0..(series_length - lag) {
+                    let data_start = s * num_series;
+                    let data_end = (s + 1) * num_series;
 
-                // Access the data in reverse order.
-                let data_start = (lags - lag) * num_series;
-                let data_end = (lags - lag + 1) * num_series;
+                    let lagged_offset = set * num_series + (s + lag) * row_stride;
+                    let lagged_end = lagged_offset + num_series;
 
-                lagged[lagged_offset..lagged_end]
-                    .copy_from_slice(&data_matrix[data_start..data_end]);
-            }
-
-            // For each row above, left-shift the row below by the number of series.
-            for lag in 1..=lags {
-                let data_start = (series_length - 1) * row_stride + lag * num_series;
-                let data_end = data_start + (lags - lag + 1) * num_series;
-                let lagged_offset = (series_length - lag - 1) * row_stride;
-                lagged.copy_within(data_start..data_end, lagged_offset);
+                    let src = &data_matrix[data_start..data_end];
+                    lagged[lagged_offset..lagged_end].copy_from_slice(src);
+                }
             }
 
             LagMatrix {
                 data: lagged,
-                num_cols: num_series * (lags + 1),
+                num_cols: num_series * num_lags,
                 num_rows: series_length,
                 series_length,
                 series_count: num_series,
-                num_lags: lags + 1, // including zero-lag
+                num_lags,
                 row_stride,
                 row_major: false,
             }
@@ -807,8 +814,8 @@ mod tests {
         let data = [42.0, 40.0, 38.0, 36.0];
         let lag = f64::INFINITY;
 
-        let direct = lag_matrix(&data, 3, lag, 0).unwrap();
-        let implicit = data.lag_matrix(3, lag, 0).unwrap();
+        let direct = lag_matrix(&data, 0..=3, lag, 0).unwrap();
+        let implicit = data.lag_matrix(0..=3, lag, 0).unwrap();
 
         assert_eq!(direct.num_lags(), 4);
         assert_eq!(direct.num_rows(), 4);
@@ -833,12 +840,39 @@ mod tests {
 
     #[test]
     #[rustfmt::skip]
+    fn test_lag_2() {
+        let data = [42.0, 40.0, 38.0, 36.0];
+        let lag = f64::INFINITY;
+
+        let direct = lag_matrix(&data, [1, 3, 2], lag, 0).unwrap();
+
+        assert_eq!(direct.num_lags(), 3);
+        assert_eq!(direct.num_rows(), 3);
+        assert_eq!(direct.num_cols(), 4);
+        assert_eq!(direct.row_stride(), 4);
+        assert_eq!(direct.series_count(), 1);
+        assert_eq!(direct.series_length(), 4);
+        assert_eq!(direct.matrix_layout(), MatrixLayout::RowMajor(4));
+        assert!(direct.is_row_major());
+
+        assert_eq!(
+            direct,
+            &[
+                lag, 42.0, 40.0, 38.0,
+                lag,  lag,  lag, 42.0,
+                lag,  lag, 42.0, 40.0
+            ]
+        );
+    }
+
+    #[test]
+    #[rustfmt::skip]
     fn test_strided_lag_1() {
         let data = [42.0, 40.0, 38.0, 36.0];
         let lag = f64::INFINITY;
         let padding = f64::INFINITY;
 
-        let direct = lag_matrix(&data, 3, lag, 5).unwrap();
+        let direct = lag_matrix(&data, 0..=3, lag, 5).unwrap();
 
         assert_eq!(direct.num_lags(), 4);
         assert_eq!(direct.num_rows(), 4);
@@ -867,7 +901,7 @@ mod tests {
         let lag = f64::INFINITY;
         let padding = f64::INFINITY;
 
-        let direct = lag_matrix(&data, 3, lag, 8).unwrap();
+        let direct = lag_matrix(&data, 0..=3, lag, 8).unwrap();
 
         assert_eq!(direct.num_lags(), 4);
         assert_eq!(direct.num_rows(), 4);
@@ -901,11 +935,11 @@ mod tests {
         let lag = f64::INFINITY;
         let padding = f64::INFINITY;
 
-        let direct = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 3, lag, 5).unwrap();
+        let direct = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), 0..=3, lag, 5).unwrap();
 
         assert_eq!(direct.num_lags(), 4);
-        assert_eq!(direct.num_rows(), 4);
-        assert_eq!(direct.num_cols(), 8);
+        assert_eq!(direct.num_rows(), 8);
+        assert_eq!(direct.num_cols(), 4);
         assert_eq!(direct.row_stride(), 5);
         assert_eq!(direct.series_count(), 2);
         assert_eq!(direct.series_length(), 4);
@@ -929,6 +963,42 @@ mod tests {
 
     #[test]
     #[rustfmt::skip]
+    fn test_lag_2d_rowwise_2() {
+        let data = [
+            1.0,  2.0,  3.0,  4.0,
+            -1.0, -2.0, -3.0, -4.0
+        ];
+
+        // Using infinity for padding because NaN doesn't equal itself.
+        let lag = f64::INFINITY;
+        let padding = f64::INFINITY;
+
+        let direct = lag_matrix_2d(&data, MatrixLayout::RowMajor(4), [1, 3, 2], lag, 5).unwrap();
+
+        assert_eq!(direct.num_lags(), 3);
+        assert_eq!(direct.num_rows(), 6);
+        assert_eq!(direct.num_cols(), 4);
+        assert_eq!(direct.row_stride(), 5);
+        assert_eq!(direct.series_count(), 2);
+        assert_eq!(direct.series_length(), 4);
+        assert_eq!(direct.matrix_layout(), MatrixLayout::RowMajor(4));
+        assert!(direct.is_row_major());
+
+        assert_eq!(
+            direct,
+            &[
+                lag,  1.0,  2.0,  3.0, padding,
+                lag, -1.0, -2.0, -3.0, padding,
+                lag,  lag,  lag,  1.0, padding,
+                lag,  lag,  lag, -1.0, padding,
+                lag,  lag,  1.0,  2.0, padding,
+                lag,  lag, -1.0, -2.0, padding,
+            ]
+        );
+    }
+
+    #[test]
+    #[rustfmt::skip]
     fn test_lag_2d_columnwise() {
         let data = [
             1.0, -1.0,
@@ -941,7 +1011,7 @@ mod tests {
         let lag = f64::INFINITY;
         let padding = f64::INFINITY;
 
-        let direct = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 3, lag, 9).unwrap();
+        let direct = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), 0..=3, lag, 9).unwrap();
 
         assert_eq!(direct.num_lags(), 4);
         assert_eq!(direct.num_rows(), 4);
@@ -965,6 +1035,42 @@ mod tests {
                 2.0, -2.0,  1.0, -1.0,  lag,  lag,  lag,  lag, padding,
                 3.0, -3.0,  2.0, -2.0,  1.0, -1.0,  lag,  lag, padding,
                 4.0, -4.0,  3.0, -3.0,  2.0, -2.0,  1.0, -1.0, padding
+            ]
+        );
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_lag_2d_columnwise_2() {
+        let data = [
+            1.0, -1.0,
+            2.0, -2.0,
+            3.0, -3.0,
+            4.0, -4.0
+        ];
+
+        // Using infinity for padding because NaN doesn't equal itself.
+        let lag = f64::INFINITY;
+        let padding = f64::INFINITY;
+
+        let direct = lag_matrix_2d(&data, MatrixLayout::ColumnMajor(4), [1, 3, 2], lag, 7).unwrap();
+
+        assert_eq!(direct.num_lags(), 3);
+        assert_eq!(direct.num_rows(), 4);
+        assert_eq!(direct.num_cols(), 6);
+        assert_eq!(direct.row_stride(), 7);
+        assert_eq!(direct.series_count(), 2);
+        assert_eq!(direct.series_length(), 4);
+        assert_eq!(direct.matrix_layout(), MatrixLayout::ColumnMajor(4));
+        assert!(!direct.is_row_major());
+
+        assert_eq!(
+            direct,
+            &[
+                lag,  lag,  lag,  lag,  lag,  lag,  padding,
+                1.0, -1.0,  lag,  lag,  lag,  lag,  padding,
+                2.0, -2.0,  lag,  lag,  1.0, -1.0,  padding,
+                3.0, -3.0,  1.0, -1.0,  2.0, -2.0,  padding
             ]
         );
     }
