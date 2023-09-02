@@ -1,6 +1,6 @@
 [package]
 name = "timelag"
-version = "0.1.0"
+version = "0.2.0"
 description = "Creating time-lagged time series data"
 authors = ["Markus Mayer"]
 repository = "https://github.com/sunsided/timelag-rs"
