@@ -107,14 +107,14 @@
 
 #[cfg(feature = "ndarray")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
-mod ndarray;
+mod ndarray_support;
 
 use std::borrow::Borrow;
 use std::fmt::{Display, Formatter};
 
 #[cfg(feature = "ndarray")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
-pub use ndarray::LagMatrixFromArray;
+pub use ndarray_support::LagMatrixFromArray;
 
 /// The prelude.
 pub mod prelude {
@@ -122,7 +122,7 @@ pub mod prelude {
 
     #[cfg(feature = "ndarray")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
-    pub use crate::ndarray::LagMatrixFromArray;
+    pub use crate::ndarray_support::LagMatrixFromArray;
 }
 
 /// Provides the [`lag_matrix`](CreateLagMatrix::lag_matrix) and [`lag_matrix_2d`](CreateLagMatrix::lag_matrix_2d)
