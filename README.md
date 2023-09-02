@@ -1,8 +1,10 @@
-# timelag — creating time lagged data series
+# timelag — creating time-lagged time series data
 
-This crate provides `lag_matrix` and related functions to create time-lagged
-versions of time series. Support for [ndarray](https://crates.io/crates/ndarray)'s `Array1`
-and `Array2` traits is available via the `ndarray` crate feature.
+This crate provides the `lag_matrix` and related functions to create time-lagged versions of time series similar
+to MATLAB's [`lagmatrix`](https://mathworks.com/help/econ/lagmatrix.html) for time series analysis.
+
+Support for [ndarray](https://crates.io/crates/ndarray)'s `Array1` and `Array2` traits is available via the
+`ndarray` crate feature.
 
 ## Examples
 
