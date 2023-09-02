@@ -146,50 +146,58 @@ impl<T> LagMatrix<T> {
     ///
     /// Note that the physical row length, i.e. the number of elements
     /// to skip in order to go the next row, is determined by by the [`row_stride`].
-    pub fn num_rows(&self) -> usize {
+    #[inline(always)]
+    pub const fn num_rows(&self) -> usize {
         self.num_rows
     }
 
     /// The number of columns in the matrix.
-    pub fn num_cols(&self) -> usize {
+    #[inline(always)]
+    pub const fn num_cols(&self) -> usize {
         self.num_cols
     }
 
     /// The number of time series captured by the matrix.
-    pub fn series_count(&self) -> usize {
+    #[inline(always)]
+    pub const fn series_count(&self) -> usize {
         self.series_count
     }
 
     /// The length of each time series captured by the matrix.
-    pub fn series_length(&self) -> usize {
+    #[inline(always)]
+    pub const fn series_length(&self) -> usize {
         self.series_length
     }
 
     /// The number of lags represented in the matrix.
-    pub fn num_lags(&self) -> usize {
+    #[inline(always)]
+    pub const fn num_lags(&self) -> usize {
         self.num_lags
     }
 
     /// The number of elements to skip in order to go from one
     /// row to another. This value is greater than or equal to [`num_rows`].
-    pub fn row_stride(&self) -> usize {
+    #[inline(always)]
+    pub const fn row_stride(&self) -> usize {
         self.row_stride
     }
 
     /// Determines whether the matrix is row-major, i.e. time series data
     /// lies along the columns and lags are produced along the columns.
-    pub fn is_row_major(&self) -> bool {
+    #[inline(always)]
+    pub const fn is_row_major(&self) -> bool {
         self.row_major
     }
 
     /// Determines whether the matrix is column-major, i.e. time series data
     /// lies along the columns and lags are produced along the rows.
-    pub fn is_column_major(&self) -> bool {
+    #[inline(always)]
+    pub const fn is_column_major(&self) -> bool {
         !self.row_major
     }
 
     /// Obtains the matrix layout.
-    pub fn matrix_layout(&self) -> MatrixLayout {
+    pub const fn matrix_layout(&self) -> MatrixLayout {
         if self.row_major {
             MatrixLayout::RowMajor(self.series_length)
         } else {
@@ -198,12 +206,14 @@ impl<T> LagMatrix<T> {
     }
 
     /// Converts this [`LagMatrix`] into a vector.
+    #[inline(always)]
     pub fn into_vec(self) -> Vec<T> {
         self.data
     }
 }
 
 impl<T> Into<Vec<T>> for LagMatrix<T> {
+    #[inline(always)]
     fn into(self) -> Vec<T> {
         self.data
     }
@@ -212,8 +222,29 @@ impl<T> Into<Vec<T>> for LagMatrix<T> {
 impl<T> Deref for LagMatrix<T> {
     type Target = [T];
 
+    #[inline(always)]
     fn deref(&self) -> &Self::Target {
         &self.data
+    }
+}
+
+impl<T> PartialEq<[T]> for LagMatrix<T>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &[T]) -> bool {
+        self.data.iter().eq(other)
+    }
+}
+
+impl<S, T> PartialEq<S> for LagMatrix<T>
+where
+    S: AsRef<[T]>,
+    T: PartialEq,
+{
+    #[inline(always)]
+    fn eq(&self, other: &S) -> bool {
+        self.data.eq(other.as_ref())
     }
 }
 
@@ -789,7 +820,7 @@ mod tests {
         assert!(direct.is_row_major());
 
         assert_eq!(
-            direct.as_ref(),
+            direct,
             &[
                 42.0, 40.0, 38.0, 36.0, // original data
                  lag, 42.0, 40.0, 38.0, // first lag
@@ -819,7 +850,7 @@ mod tests {
         assert!(direct.is_row_major());
 
         assert_eq!(
-            direct.as_ref(),
+            direct,
             &[
                 42.0, 40.0, 38.0, 36.0, padding, // original data
                  lag, 42.0, 40.0, 38.0, padding, // first lag
@@ -848,7 +879,7 @@ mod tests {
         assert!(direct.is_row_major());
 
         assert_eq!(
-            direct.as_ref(),
+            direct,
             &[
                 42.0, 40.0, 38.0, 36.0, padding, padding, padding, padding, // original data
                  lag, 42.0, 40.0, 38.0, padding, padding, padding, padding, // first lag
@@ -882,7 +913,7 @@ mod tests {
         assert!(direct.is_row_major());
 
         assert_eq!(
-            direct.as_ref(),
+            direct,
             &[
                  1.0,  2.0,  3.0,  4.0, padding, // original data
                 -1.0, -2.0, -3.0, -4.0, padding,
@@ -922,7 +953,7 @@ mod tests {
         assert!(!direct.is_row_major());
 
         assert_eq!(
-            direct.as_ref(),
+            direct,
             &[
             //   original
             //   |-----|    first lag
