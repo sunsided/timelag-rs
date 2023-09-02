@@ -1,5 +1,12 @@
 # timelag — creating time-lagged time series data
 
+[![Crates.io](https://img.shields.io/crates/v/timelag)](https://crates.io/crates/timelag)
+[![Crates.io](https://img.shields.io/crates/l/timelag)](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sunsided/timelag-rs/rust.yml)](https://github.com/sunsided/timelag-rs/actions/workflows/rust.yml)
+[![docs.rs](https://img.shields.io/docsrs/timelag)](https://docs.rs/timelag/)
+
+---
+
 This crate provides the `lag_matrix` and related functions to create time-lagged versions of time series similar
 to MATLAB's [`lagmatrix`](https://mathworks.com/help/econ/lagmatrix.html) for time series analysis.
 
