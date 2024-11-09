@@ -4,6 +4,7 @@
 [![Crates.io](https://img.shields.io/crates/l/timelag)](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sunsided/timelag-rs/rust.yml)](https://github.com/sunsided/timelag-rs/actions/workflows/rust.yml)
 [![docs.rs](https://img.shields.io/docsrs/timelag)](https://docs.rs/timelag/)
+[![Safety Dance][safety-image]][safety-link]
 
 ---
 
@@ -22,15 +23,15 @@ use timelag::lag_matrix;
 
 fn singular_series() {
     let data = [1.0, 2.0, 3.0, 4.0];
-    
+
     // Using infinity for padding because NaN doesn't equal itself.
     let lag = f64::INFINITY;
     let padding = f64::INFINITY;
-    
+
     // Create three lagged versions.
     // Use a stride of 5 for the rows, i.e. pad with one extra entry.
     let lagged = lag_matrix(&data, 0..=3, lag, 5).unwrap();
-    
+
     assert_eq!(
         lagged,
         &[
@@ -54,7 +55,7 @@ fn singular_series() {
             lag, lag, lag, 1.0,
         ]
     );
-    
+
     assert_eq!(lagged, other);
 }
 ```
@@ -66,7 +67,7 @@ use timelag::{lag_matrix_2d, MatrixLayout};
 
 fn matrix_rows() {
     let data = [
-         1.0,  2.0,  3.0,  4.0,
+        1.0, 2.0, 3.0, 4.0,
         -1.0, -2.0, -3.0, -4.0
     ];
 
@@ -79,14 +80,14 @@ fn matrix_rows() {
     assert_eq!(
         lagged,
         &[
-             1.0,  2.0,  3.0,  4.0, padding, // original data
+            1.0, 2.0, 3.0, 4.0, padding, // original data
             -1.0, -2.0, -3.0, -4.0, padding,
-             lag,  1.0,  2.0,  3.0, padding, // first lag
-             lag, -1.0, -2.0, -3.0, padding,
-             lag,  lag,  1.0,  2.0, padding, // second lag
-             lag,  lag, -1.0, -2.0, padding,
-             lag,  lag,  lag,  1.0, padding, // third lag
-             lag,  lag,  lag, -1.0, padding,
+            lag, 1.0, 2.0, 3.0, padding, // first lag
+            lag, -1.0, -2.0, -3.0, padding,
+            lag, lag, 1.0, 2.0, padding, // second lag
+            lag, lag, -1.0, -2.0, padding,
+            lag, lag, lag, 1.0, padding, // third lag
+            lag, lag, lag, -1.0, padding,
         ]
     );
 }
@@ -115,17 +116,21 @@ fn matrix_columns() {
     assert_eq!(
         lagged,
         &[
-        //   original
-        //   |-----|    first lag
-        //   |     |     |-----|    second lag
-        //   |     |     |     |     |-----|    third lag
-        //   |     |     |     |     |     |     |-----|
-        //   ↓     ↓     ↓     ↓     ↓     ↓     ↓     ↓
-            1.0, -1.0,  lag,  lag,  lag,  lag,  lag,  lag, padding,
-            2.0, -2.0,  1.0, -1.0,  lag,  lag,  lag,  lag, padding,
-            3.0, -3.0,  2.0, -2.0,  1.0, -1.0,  lag,  lag, padding,
-            4.0, -4.0,  3.0, -3.0,  2.0, -2.0,  1.0, -1.0, padding
+            //   original
+            //   |-----|    first lag
+            //   |     |     |-----|    second lag
+            //   |     |     |     |     |-----|    third lag
+            //   |     |     |     |     |     |     |-----|
+            //   ↓     ↓     ↓     ↓     ↓     ↓     ↓     ↓
+            1.0, -1.0, lag, lag, lag, lag, lag, lag, padding,
+            2.0, -2.0, 1.0, -1.0, lag, lag, lag, lag, padding,
+            3.0, -3.0, 2.0, -2.0, 1.0, -1.0, lag, lag, padding,
+            4.0, -4.0, 3.0, -3.0, 2.0, -2.0, 1.0, -1.0, padding
         ]
     );
 }
 ```
+
+[safety-image]: https://img.shields.io/badge/unsafe-opt_in-success.svg
+
+[safety-link]: https://github.com/rust-secure-code/safety-dance/
