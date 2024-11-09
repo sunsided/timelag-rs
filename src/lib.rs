@@ -112,13 +112,17 @@
 // the `docsrs` configuration attribute is defined
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+// Explicitly allow or forbid unsafe code depending on the feature selection.
+#[cfg_attr(feature = "unsafe", allow(unsafe_code))]
+#[cfg_attr(not(feature = "unsafe"), forbid(unsafe_code))]
+// Enable ndarray based on the feature.
 #[cfg(feature = "ndarray")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
 mod ndarray_support;
 
-use std::borrow::Borrow;
-use std::fmt::{Display, Formatter};
-use std::ops::Deref;
+use core::borrow::Borrow;
+use core::fmt::{Display, Formatter};
+use core::ops::{Deref, Range};
 
 #[cfg(feature = "ndarray")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
@@ -220,17 +224,17 @@ impl<T> LagMatrix<T> {
     }
 }
 
-impl<T> Into<Vec<T>> for LagMatrix<T> {
+impl<T> From<LagMatrix<T>> for Vec<T> {
     #[inline(always)]
-    fn into(self) -> Vec<T> {
-        self.data
+    fn from(value: LagMatrix<T>) -> Self {
+        value.data
     }
 }
 
-impl<T> Into<Box<[T]>> for LagMatrix<T> {
+impl<T> From<LagMatrix<T>> for Box<[T]> {
     #[inline(always)]
-    fn into(self) -> Box<[T]> {
-        self.data.into_boxed_slice()
+    fn from(value: LagMatrix<T>) -> Self {
+        value.data.into_boxed_slice()
     }
 }
 
@@ -553,12 +557,12 @@ pub enum MatrixLayout {
     /// Data is laid out row-wise, i.e. reach row of the matrix contains a time series
     /// and the columns represent points in time.
     ///
-    /// The values represents the number of elements per row, i.e. the length of each time series.
+    /// The values represent the number of elements per row, i.e. the length of each time series.
     RowMajor(usize),
     /// Data is laid out column-wise, i.e. reach column of the matrix contains a time series
     /// and the rows represent points in time.
     ///
-    /// The values represents the number of elements per column, i.e. the length of each time series.
+    /// The values represent the number of elements per column, i.e. the length of each time series.
     ColumnMajor(usize),
 }
 
@@ -568,6 +572,10 @@ impl MatrixLayout {
             MatrixLayout::RowMajor(len) => *len,
             MatrixLayout::ColumnMajor(len) => *len,
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 
@@ -591,12 +599,12 @@ impl MatrixLayout {
 /// ## Returns
 /// A vector containing lagged copies of the original data, or an error.
 ///
-/// For `D` datapoints of `S` series and `L` lags in column-major order, the result can be
+/// For `D` data points of `S` series and `L` lags in column-major order, the result can be
 /// interpreted as an `D×(S·L)` matrix with different time series along the columns and
 /// subsequent lags in subsequent columns. With row strides `M >= (S·L)`, the
 /// resulting matrix is of shape `D×M`.
 ///
-/// For `D` datapoints of `S` series and `L` lags in row-major order, the result can be
+/// For `D` data points of `S` series and `L` lags in row-major order, the result can be
 /// interpreted as an `(S·L)×D` matrix with different time series along the rows and
 /// subsequent lags in subsequent rows. With row strides `M >= D`, the
 /// resulting matrix is of shape `(S·L)×M`.
@@ -707,16 +715,23 @@ pub fn lag_matrix_2d<T: Copy, R: IntoIterator<Item = usize>>(
 
             let mut lagged = vec![fill; num_series * row_stride * num_lags];
             for (set, lag) in lags.into_iter().enumerate() {
+                let set_offset = set * num_series * row_stride;
+
+                // Each series is shifted by the same lag.
                 for s in 0..num_series {
                     let data_start = s * series_length;
                     let data_end = (s + 1) * series_length - lag;
 
-                    let lagged_offset = set * num_series * row_stride + s * row_stride + lag;
+                    let lagged_offset = set_offset + s * row_stride + lag;
                     let lagged_rows = series_length - lag;
                     let lagged_end = lagged_offset + lagged_rows;
 
-                    let src = &data_matrix[data_start..data_end];
-                    lagged[lagged_offset..lagged_end].copy_from_slice(src);
+                    copy_range(
+                        data_matrix,
+                        &mut lagged,
+                        data_start..data_end,
+                        lagged_offset..lagged_end,
+                    );
                 }
             }
 
@@ -737,17 +752,23 @@ pub fn lag_matrix_2d<T: Copy, R: IntoIterator<Item = usize>>(
             }
 
             let mut lagged = vec![fill; row_stride * series_length];
-
             for (set, lag) in lags.into_iter().enumerate() {
+                let set_offset = set * num_series;
+
+                // Each series is shifted by the same lag.
                 for s in 0..(series_length - lag) {
                     let data_start = s * num_series;
                     let data_end = (s + 1) * num_series;
 
-                    let lagged_offset = set * num_series + (s + lag) * row_stride;
+                    let lagged_offset = set_offset + (s + lag) * row_stride;
                     let lagged_end = lagged_offset + num_series;
 
-                    let src = &data_matrix[data_start..data_end];
-                    lagged[lagged_offset..lagged_end].copy_from_slice(src);
+                    copy_range(
+                        data_matrix,
+                        &mut lagged,
+                        data_start..data_end,
+                        lagged_offset..lagged_end,
+                    );
                 }
             }
 
@@ -763,6 +784,20 @@ pub fn lag_matrix_2d<T: Copy, R: IntoIterator<Item = usize>>(
             }
         }
     })
+}
+
+fn copy_range<T: Copy>(src: &[T], dst: &mut [T], src_range: Range<usize>, dst_range: Range<usize>) {
+    if cfg!(feature = "unsafe") {
+        unsafe {
+            let src: &[T] = src.get_unchecked(src_range);
+            let dst: &mut [T] = dst.get_unchecked_mut(dst_range);
+            dst.copy_from_slice(src);
+        }
+    } else {
+        let src: &[T] = &src[src_range];
+        let dst: &mut [T] = &mut dst[dst_range];
+        dst.copy_from_slice(src);
+    }
 }
 
 /// An error during creation of a lagged data matrix.
