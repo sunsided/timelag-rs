@@ -112,6 +112,10 @@
 // the `docsrs` configuration attribute is defined
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+// Explicitly allow or forbid unsafe code depending on the feature selection.
+#[cfg_attr(feature = "unsafe", allow(unsafe_code))]
+#[cfg_attr(not(feature = "unsafe"), forbid(unsafe_code))]
+// Enable ndarray based on the feature.
 #[cfg(feature = "ndarray")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
 mod ndarray_support;
@@ -707,11 +711,13 @@ pub fn lag_matrix_2d<T: Copy, R: IntoIterator<Item = usize>>(
 
             let mut lagged = vec![fill; num_series * row_stride * num_lags];
             for (set, lag) in lags.into_iter().enumerate() {
+                let set_offset = set * num_series * row_stride;
+
                 for s in 0..num_series {
                     let data_start = s * series_length;
                     let data_end = (s + 1) * series_length - lag;
 
-                    let lagged_offset = set * num_series * row_stride + s * row_stride + lag;
+                    let lagged_offset = set_offset + s * row_stride + lag;
                     let lagged_rows = series_length - lag;
                     let lagged_end = lagged_offset + lagged_rows;
 
