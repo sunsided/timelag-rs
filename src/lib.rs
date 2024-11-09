@@ -1083,4 +1083,25 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn test_lag_matrix_2d_long_series_rowwise() {
+        let long_data_rowwise: Vec<f64> = (0..20_000).map(|i| i as f64).collect();
+        let lag = f64::INFINITY;
+
+        // Run the lag_matrix_2d function and check that it does not return an error
+        let result = lag_matrix_2d(
+            &long_data_rowwise,
+            MatrixLayout::RowMajor(20_000),
+            0..=999,
+            lag,
+            20_000,
+        );
+
+        assert!(result.is_ok(), "lag_matrix_2d returned an error");
+        let matrix = result.unwrap();
+        assert_eq!(matrix.num_rows(), 1000);
+        assert_eq!(matrix.num_cols(), 20000);
+        assert!(matrix.is_row_major());
+    }
 }

@@ -13,6 +13,10 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Upgraded `ndarray` from 0.15 to 0.16.
 
+### Internal
+
+- Add criterion benchmarks to the project.
+
 ## [0.4.0] - 2023-09-02
 
 ### Changed
