@@ -5,7 +5,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.5.0] - 2024-11-09
 
-[0.5.0]: https://github.com/sunsided/timelag-rs/releases/tag/0.5.0
+[0.5.0]: https://github.com/sunsided/timelag-rs/releases/tag/v0.5.0
 
 ### Added
 
