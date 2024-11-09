@@ -151,7 +151,7 @@ impl<T> LagMatrix<T> {
     /// This value is less than or equal to [`row_stride`].
     ///
     /// Note that the physical row length, i.e. the number of elements
-    /// to skip in order to go the next row, is determined by by the [`row_stride`].
+    /// to skip in order to go the next row, is determined by the [`row_stride`].
     #[inline(always)]
     pub const fn num_rows(&self) -> usize {
         self.num_rows
@@ -328,12 +328,12 @@ pub trait CreateLagMatrix<T> {
     /// ## Returns
     /// A vector containing lagged copies of the original data, or an error.
     ///
-    /// For `D` datapoints of `S` series and `L` lags in column-major order, the result can be
+    /// For `D` data points of `S` series and `L` lags in column-major order, the result can be
     /// interpreted as an `D×(S·L)` matrix with different time series along the columns and
     /// subsequent lags in subsequent columns. With row strides `M >= (S·L)`, the
     /// resulting matrix is of shape `D×M`.
     ///
-    /// For `D` datapoints of `S` series and `L` lags in row-major order, the result can be
+    /// For `D` data points of `S` series and `L` lags in row-major order, the result can be
     /// interpreted as an `(S·L)×D` matrix with different time series along the rows and
     /// subsequent lags in subsequent rows. With row strides `M >= D`, the
     /// resulting matrix is of shape `(S·L)×M`.
@@ -458,7 +458,7 @@ where
 /// ## Returns
 /// A vector containing lagged copies of the original data, or an error.
 ///
-/// For `D` datapoints and `L` lags, the result can be interpreted as an `L×D` matrix with
+/// For `D` data points and `L` lags, the result can be interpreted as an `L×D` matrix with
 /// lagged versions along the rows. With strides `S >= D`, the resulting matrix is of shape `L×S`
 /// with an `L×D` submatrix at `0×0` and padding to the right.
 ///
