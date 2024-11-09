@@ -8,6 +8,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Added `Into<Box[T]>` for `TimeLag`.
+- The crate is now explicitly labeled `forbid(unsafe)` unless the `unsafe` feature is enabled.
 
 ### Changed
 
