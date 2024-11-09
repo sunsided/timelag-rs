@@ -120,9 +120,9 @@
 #[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
 mod ndarray_support;
 
-use std::borrow::Borrow;
-use std::fmt::{Display, Formatter};
-use std::ops::Deref;
+use core::borrow::Borrow;
+use core::fmt::{Display, Formatter};
+use core::ops::{Deref, Range};
 
 #[cfg(feature = "ndarray")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ndarray")))]
@@ -713,6 +713,7 @@ pub fn lag_matrix_2d<T: Copy, R: IntoIterator<Item = usize>>(
             for (set, lag) in lags.into_iter().enumerate() {
                 let set_offset = set * num_series * row_stride;
 
+                // Each series is shifted by the same lag.
                 for s in 0..num_series {
                     let data_start = s * series_length;
                     let data_end = (s + 1) * series_length - lag;
@@ -721,8 +722,12 @@ pub fn lag_matrix_2d<T: Copy, R: IntoIterator<Item = usize>>(
                     let lagged_rows = series_length - lag;
                     let lagged_end = lagged_offset + lagged_rows;
 
-                    let src = &data_matrix[data_start..data_end];
-                    lagged[lagged_offset..lagged_end].copy_from_slice(src);
+                    copy_range(
+                        data_matrix,
+                        &mut lagged,
+                        data_start..data_end,
+                        lagged_offset..lagged_end,
+                    );
                 }
             }
 
@@ -743,17 +748,23 @@ pub fn lag_matrix_2d<T: Copy, R: IntoIterator<Item = usize>>(
             }
 
             let mut lagged = vec![fill; row_stride * series_length];
-
             for (set, lag) in lags.into_iter().enumerate() {
+                let set_offset = set * num_series;
+
+                // Each series is shifted by the same lag.
                 for s in 0..(series_length - lag) {
                     let data_start = s * num_series;
                     let data_end = (s + 1) * num_series;
 
-                    let lagged_offset = set * num_series + (s + lag) * row_stride;
+                    let lagged_offset = set_offset + (s + lag) * row_stride;
                     let lagged_end = lagged_offset + num_series;
 
-                    let src = &data_matrix[data_start..data_end];
-                    lagged[lagged_offset..lagged_end].copy_from_slice(src);
+                    copy_range(
+                        data_matrix,
+                        &mut lagged,
+                        data_start..data_end,
+                        lagged_offset..lagged_end,
+                    );
                 }
             }
 
@@ -769,6 +780,20 @@ pub fn lag_matrix_2d<T: Copy, R: IntoIterator<Item = usize>>(
             }
         }
     })
+}
+
+fn copy_range<T: Copy>(src: &[T], dst: &mut [T], src_range: Range<usize>, dst_range: Range<usize>) {
+    if cfg!(feature = "unsafe") {
+        unsafe {
+            let src: &[T] = src.get_unchecked(src_range);
+            let dst: &mut [T] = dst.get_unchecked_mut(dst_range);
+            dst.copy_from_slice(src);
+        }
+    } else {
+        let src: &[T] = &src[src_range];
+        let dst: &mut [T] = &mut dst[dst_range];
+        dst.copy_from_slice(src);
+    }
 }
 
 /// An error during creation of a lagged data matrix.
