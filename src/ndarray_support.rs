@@ -24,7 +24,7 @@ where
     /// ## Returns
     /// A vector containing lagged copies of the original data, or an error.
     ///
-    /// For `N` datapoints and `M` lags, the result can be interpreted as an `M×N` matrix with
+    /// For `N` data points and `M` lags, the result can be interpreted as an `M×N` matrix with
     /// lagged versions along the rows. With strides `S >= N`, the resulting matrix is of shape `M×S`
     /// with an `M×N` submatrix at `0×0` and padding to the right.
     ///
@@ -138,6 +138,39 @@ where
     }
 }
 
+/// Converts a `LagMatrix` into a 2D `ArrayBase` with a layout determined by the matrix's stride.
+///
+/// This function takes a `LagMatrix` and returns a 2D array without transposing it.
+/// The output layout matches the stride and shape properties defined in the `LagMatrix`, allowing for
+/// flexible memory layouts while preserving the original structure of the data.
+///
+/// # Parameters
+///
+/// - `matrix`: The input `LagMatrix<A>` containing the data to be transformed into
+///   a 2D array. This matrix has shape and stride properties that determine the output layout.
+///
+/// # Returns
+///
+/// A 2D `ArrayBase<OwnedRepr<A>, Ix2>` reflecting the original structure of `matrix`,
+/// with either a standard row-major layout or a layout determined by custom strides.
+///
+/// # Panics
+///
+/// This function will panic if the data length in `LagMatrix` is incompatible with the expected
+/// shape and stride configuration, specifically:
+/// - If the length of `matrix.data` does not match the calculated shape
+///   `(matrix.series_length, matrix.num_lags)`.
+/// - If custom strides are applied that do not align with the length of `matrix.data`.
+///
+/// # Notes
+///
+/// - If `row_stride` is equal to `series_length`, the function uses a standard row-major layout
+///   for the data.
+/// - When `row_stride` differs from `series_length`, custom strides are applied to preserve
+///   the intended layout of `matrix`, using `(matrix.series_length, matrix.num_lags).strides((matrix.row_stride, 1))`.
+///
+/// This function is ideal when you need a straightforward conversion of `LagMatrix` to
+/// `Array2`, without reordering for row- or column-major access patterns.
 fn make_array<A>(matrix: LagMatrix<A>) -> ArrayBase<OwnedRepr<A>, Ix2> {
     let array = if matrix.row_stride == matrix.series_length {
         Array2::<A>::from_shape_vec((matrix.series_length, matrix.num_lags), matrix.data)
@@ -152,6 +185,36 @@ fn make_array<A>(matrix: LagMatrix<A>) -> ArrayBase<OwnedRepr<A>, Ix2> {
     array
 }
 
+/// Converts a `LagMatrix` into a 2D row-major `ArrayBase` representation.
+///
+/// This function takes a `LagMatrix` and returns a 2D array arranged in row-major order,
+/// preserving the layout of the original data for row-based access patterns.
+/// It is particularly useful when row-oriented memory layouts improve performance,
+/// such as in operations that process rows sequentially.
+///
+/// # Parameters
+///
+/// - `matrix`: The input `LagMatrix<A>` containing the data to be transformed into
+///   a 2D array. This matrix may have varying layouts depending on its `row_stride`.
+///
+/// # Returns
+///
+/// A 2D `ArrayBase<OwnedRepr<A>, Ix2>` where data is stored in row-major order.
+///
+/// # Panics
+///
+/// This function will panic if the underlying vector in `LagMatrix` does not match
+/// the expected shape or layout, specifically:
+/// - If the length of the data does not match the calculated shape
+///   `(matrix.series_length, matrix.series_count * matrix.num_lags)`.
+/// - If the specified strides are incompatible with the data's length.
+///
+/// # Notes
+///
+/// - If the `row_stride` of the `LagMatrix` is equal to `series_length`, the matrix
+///   is reshaped directly into the target layout.
+/// - If `row_stride` differs from `series_length`, custom strides are applied during
+///   reshaping to accurately reflect the row-based structure of the data.
 fn make_array_2d_row_major<A>(matrix: LagMatrix<A>) -> ArrayBase<OwnedRepr<A>, Ix2> {
     let array = if matrix.row_stride == matrix.series_length {
         Array2::<A>::from_shape_vec(
@@ -170,6 +233,37 @@ fn make_array_2d_row_major<A>(matrix: LagMatrix<A>) -> ArrayBase<OwnedRepr<A>, I
     array
 }
 
+/// Converts a `LagMatrix` into a 2D column-major `ArrayBase` representation.
+///
+/// This function takes a `LagMatrix` and returns a 2D array in column-major order,
+/// where the rows and columns of the original matrix are effectively transposed
+/// to prioritize column-oriented operations. This is particularly useful for
+/// performance optimizations in applications where column-major memory layouts
+/// are advantageous.
+///
+/// # Parameters
+///
+/// - `matrix`: The input `LagMatrix<A>` containing the data to be transformed into
+///   a 2D array. The layout of the matrix may vary depending on its `row_stride`.
+///
+/// # Returns
+///
+/// A 2D `ArrayBase<OwnedRepr<A>, Ix2>` where the data is arranged in column-major order.
+///
+/// # Panics
+///
+/// This function will panic if the underlying vector in `LagMatrix` does not match
+/// the shape constraints. Specifically:
+/// - If the length of the data does not align with the calculated shape of
+///   `(matrix.series_count * matrix.num_lags, matrix.series_length)`.
+/// - If the specified strides do not match the data's length.
+///
+/// # Notes
+///
+/// - If the `row_stride` of the `LagMatrix` matches `series_length`, a straightforward
+///   conversion is performed, followed by a transpose to achieve the column-major layout.
+/// - If the `row_stride` differs from `series_length`, custom strides are used
+///   during reshaping to correctly interpret the data layout before transposition.
 fn make_array_2d_column_major<A>(matrix: LagMatrix<A>) -> ArrayBase<OwnedRepr<A>, Ix2> {
     let array = if matrix.row_stride == matrix.series_length {
         Array2::<A>::from_shape_vec(
