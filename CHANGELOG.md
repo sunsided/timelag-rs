@@ -3,7 +3,9 @@
 All notable changes to this project will be documented in this file.
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.5.0] - 2024-11-09
+
+[0.5.0]: https://github.com/sunsided/timelag-rs/releases/tag/0.5.0
 
 ### Added
 
@@ -21,6 +23,8 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.4.0] - 2023-09-02
 
+[0.4.0]: https://github.com/sunsided/timelag-rs/releases/tag/0.4.0
+
 ### Changed
 
 - [#2](https://github.com/sunsided/timelag-rs/pull/2):
@@ -30,6 +34,8 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Lag indices can now be specified as any `IntoIterator<Item = usize>`, e.g. range, array or slice.
 
 ## [0.3.0] - 2023-09-02
+
+[0.3.0]: https://github.com/sunsided/timelag-rs/releases/tag/0.3.0
 
 ### Added
 
@@ -43,11 +49,15 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.2.0] - 2023-09-02
 
+[0.2.0]: https://github.com/sunsided/timelag-rs/releases/tag/0.2.0
+
 ### Added
 
 - Added `lag_matrix_2d` with `MatrixLayout::RowWise` and `MatrixLayout::ColumnWise` support.
 
 ## [0.1.0] - 2023-09-01
+
+[0.1.0]: https://github.com/sunsided/timelag-rs/releases/tag/0.1.0
 
 ## Added
 
@@ -56,11 +66,3 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Internal
 
 - 🎉 Initial release.
-
-[0.4.0]: https://github.com/sunsided/timelag-rs/releases/tag/0.4.0
-
-[0.3.0]: https://github.com/sunsided/timelag-rs/releases/tag/0.3.0
-
-[0.2.0]: https://github.com/sunsided/timelag-rs/releases/tag/0.2.0
-
-[0.1.0]: https://github.com/sunsided/timelag-rs/releases/tag/0.1.0
