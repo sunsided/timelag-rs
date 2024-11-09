@@ -170,12 +170,14 @@ impl<T> LagMatrix<T> {
     }
 
     /// The length of each time series captured by the matrix.
+    /// This represents the length of the original series at lag zero.
     #[inline(always)]
     pub const fn series_length(&self) -> usize {
         self.series_length
     }
 
     /// The number of lags represented in the matrix.
+    /// This represents solely the number of different lag values used, but not their value.
     #[inline(always)]
     pub const fn num_lags(&self) -> usize {
         self.num_lags
@@ -222,6 +224,13 @@ impl<T> Into<Vec<T>> for LagMatrix<T> {
     #[inline(always)]
     fn into(self) -> Vec<T> {
         self.data
+    }
+}
+
+impl<T> Into<Box<[T]>> for LagMatrix<T> {
+    #[inline(always)]
+    fn into(self) -> Box<[T]> {
+        self.data.into_boxed_slice()
     }
 }
 
