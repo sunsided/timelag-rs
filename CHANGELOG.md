@@ -17,6 +17,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Internal
 
 - Add criterion benchmarks to the project.
+- Change `Into<_>` implementations to `From<_>` for broader support.
 
 ## [0.4.0] - 2023-09-02
 

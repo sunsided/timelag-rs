@@ -224,17 +224,17 @@ impl<T> LagMatrix<T> {
     }
 }
 
-impl<T> Into<Vec<T>> for LagMatrix<T> {
+impl<T> From<LagMatrix<T>> for Vec<T> {
     #[inline(always)]
-    fn into(self) -> Vec<T> {
-        self.data
+    fn from(value: LagMatrix<T>) -> Self {
+        value.data
     }
 }
 
-impl<T> Into<Box<[T]>> for LagMatrix<T> {
+impl<T> From<LagMatrix<T>> for Box<[T]> {
     #[inline(always)]
-    fn into(self) -> Box<[T]> {
-        self.data.into_boxed_slice()
+    fn from(value: LagMatrix<T>) -> Self {
+        value.data.into_boxed_slice()
     }
 }
 
@@ -572,6 +572,10 @@ impl MatrixLayout {
             MatrixLayout::RowMajor(len) => *len,
             MatrixLayout::ColumnMajor(len) => *len,
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 
