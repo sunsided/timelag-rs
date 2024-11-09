@@ -19,4 +19,4 @@ default = []
 ndarray = ["dep:ndarray"]
 
 [dependencies]
-ndarray = { version = "0.15.6", optional = true }
+ndarray = { version = "0.16.1", optional = true }
