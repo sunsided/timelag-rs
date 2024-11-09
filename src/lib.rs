@@ -557,12 +557,12 @@ pub enum MatrixLayout {
     /// Data is laid out row-wise, i.e. reach row of the matrix contains a time series
     /// and the columns represent points in time.
     ///
-    /// The values represents the number of elements per row, i.e. the length of each time series.
+    /// The values represent the number of elements per row, i.e. the length of each time series.
     RowMajor(usize),
     /// Data is laid out column-wise, i.e. reach column of the matrix contains a time series
     /// and the rows represent points in time.
     ///
-    /// The values represents the number of elements per column, i.e. the length of each time series.
+    /// The values represent the number of elements per column, i.e. the length of each time series.
     ColumnMajor(usize),
 }
 
@@ -595,12 +595,12 @@ impl MatrixLayout {
 /// ## Returns
 /// A vector containing lagged copies of the original data, or an error.
 ///
-/// For `D` datapoints of `S` series and `L` lags in column-major order, the result can be
+/// For `D` data points of `S` series and `L` lags in column-major order, the result can be
 /// interpreted as an `D×(S·L)` matrix with different time series along the columns and
 /// subsequent lags in subsequent columns. With row strides `M >= (S·L)`, the
 /// resulting matrix is of shape `D×M`.
 ///
-/// For `D` datapoints of `S` series and `L` lags in row-major order, the result can be
+/// For `D` data points of `S` series and `L` lags in row-major order, the result can be
 /// interpreted as an `(S·L)×D` matrix with different time series along the rows and
 /// subsequent lags in subsequent rows. With row strides `M >= D`, the
 /// resulting matrix is of shape `(S·L)×M`.
