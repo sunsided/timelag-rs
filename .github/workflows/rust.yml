@@ -10,23 +10,59 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-      - name: Format check
+      - name: Check format
         run: cargo fmt --check
-      - name: Check
+      - name: Clippy
         run: cargo clippy
+
+  codecov:
+    needs: lint
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --verbose
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+      - name: Generate code coverage
+        run: cargo llvm-cov nextest --features=unsafe,ndarray --lcov --output-path lcov.info
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info
+          fail_ci_if_error: true
+
+  docs:
+    name: Build documentation
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build documentation
+        run: cargo doc
+      - name: Run doctests
+        run: cargo test --doc --verbose --all-features
+
+  build:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Check
         run: cargo check
       - name: Build
         run: cargo build --verbose
-      - name: Run tests (baseline)
-        run: cargo test --tests --verbose --no-default-features
-      - name: Run tests (all features)
-        run: cargo test --tests --verbose --all-features
-      - name: Run doctests
-        run: cargo test --doc --verbose --all-features
+      - name: Build
+        run: cargo build --verbose --all-features
