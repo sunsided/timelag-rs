@@ -5,6 +5,7 @@
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sunsided/timelag-rs/rust.yml)](https://github.com/sunsided/timelag-rs/actions/workflows/rust.yml)
 [![docs.rs](https://img.shields.io/docsrs/timelag)](https://docs.rs/timelag/)
 [![Safety Dance][safety-image]][safety-link]
+[![codecov](https://codecov.io/gh/sunsided/timelag-rs/graph/badge.svg?token=8LB5R8EQUP)](https://codecov.io/gh/sunsided/timelag-rs)
 
 ---
 
